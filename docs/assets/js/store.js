@@ -1,5 +1,5 @@
 import {dbGet,dbPut} from './indexed-db.js';
-export const state={data:null,personId:localStorage.getItem('rdr-person')||'',route:{screen:'home'},online:navigator.onLine,pending:0,filter:'needs',issues:[]};
+export const state={data:null,personId:localStorage.getItem('rdr-person')||'',route:{screen:'home'},online:navigator.onLine,pending:0,filter:'all',issues:[]};
 const listeners=new Set();export const subscribe=fn=>(listeners.add(fn),()=>listeners.delete(fn));export const emit=()=>listeners.forEach(fn=>fn(state));
 export function setData(data){state.data=data;dbPut('cache',{id:'bootstrap',data,savedAt:Date.now()});emit()} export async function loadCache(){const c=await dbGet('cache','bootstrap');if(c)setData(c.data)}
 export function currentPerson(){return state.data?.people.find(p=>p.person_id===state.personId)} export function currentCrew(){const p=currentPerson();return state.data?.crews.find(c=>c.crew_id===p?.crew_id)}
