@@ -1,32 +1,8 @@
 import {state,currentPerson,patchRecord} from '../store.js';
 import {queue} from '../sync.js';
 import {sheet,esc} from '../ui.js';
-
 const id=()=>`LEG-${crypto.randomUUID().slice(0,8).toUpperCase()}`;
 const stopTypes=[['pub','Pub / meal'],['petrol','Petrol stop'],['roadhouse','Roadhouse'],['stay','Overnight stay'],['rendezvous','Rendezvous'],['attraction','Attraction'],['road_stop','Road stop']];
-
-export function legSheet(legId=''){
-  const leg=state.data.tripLegs.find(l=>l.leg_id===legId)||{leg_id:id(),direction:state.tripDirection||'outbound',day_label:'',sequence:state.data.tripLegs.length+1,date:'',from_place:'',to_place:'',via:'',stop_type:'road_stop',map_url:'https://maps.google.com/',notes:'',decision_status:'needs_decision',status:'active',version:0};
-  return sheet(legId?'Edit route leg':'Add route leg',`
-    ${legId&&leg.map_url?`<a class="primary" style="display:block;text-align:center;text-decoration:none" href="${esc(leg.map_url)}" target="_blank" rel="noopener">Open this leg in Google Maps ↗</a>`:''}
-    <form class="form" data-leg-form data-leg-id="${leg.leg_id}">
-      <label>Direction<select name="direction"><option value="outbound" ${leg.direction==='outbound'?'selected':''}>Heading out</option><option value="return" ${leg.direction==='return'?'selected':''}>Coming home</option></select></label>
-      <label>Stop type<select name="stop_type">${stopTypes.map(([v,l])=>`<option value="${v}" ${leg.stop_type===v?'selected':''}>${l}</option>`).join('')}</select></label>
-      <label>Day / title<input required name="day_label" value="${esc(leg.day_label)}" placeholder="Sunday — pub lunch"></label>
-      <label>Date<input type="date" name="date" value="${leg.date||''}"></label>
-      <label>From<input required name="from_place" value="${esc(leg.from_place)}"></label>
-      <label>To / venue<input required name="to_place" value="${esc(leg.to_place)}" placeholder="Pub, petrol stop, stay or rendezvous"></label>
-      <label>Via / notable stops<input name="via" value="${esc(leg.via||'')}"></label>
-      <label>Google Maps link<input type="url" name="map_url" value="${esc(leg.map_url||'')}"></label>
-      <label>Notes<textarea name="notes">${esc(leg.notes||'')}</textarea></label>
-      <button class="primary">Save route leg</button>
-      ${legId?`<button class="secondary" type="button" data-delete-leg="${leg.leg_id}">Delete this leg</button>`:''}
-    </form>`);
-}
-
-export async function saveLeg(form){
-  const fd=new FormData(form),existing=state.data.tripLegs.find(l=>l.leg_id===form.dataset.legId);
-  const record={...(existing||{}),leg_id:form.dataset.legId,direction:fd.get('direction'),stop_type:fd.get('stop_type'),day_label:fd.get('day_label'),date:fd.get('date'),from_place:fd.get('from_place'),to_place:fd.get('to_place'),via:fd.get('via'),map_url:fd.get('map_url'),notes:fd.get('notes'),sequence:existing?.sequence||state.data.tripLegs.length+1,status:'active',decision_status:existing?.decision_status||'needs_decision',created_by:existing?.created_by||currentPerson().person_id};
-  patchRecord('trip_leg',record);
-  await queue({entity:'trip_leg',action:existing?'update':'create',base_version:existing?.version,payload:record,actor_person_id:currentPerson().person_id});
-}
+const crewKey=(leg,crew)=>`LC-${leg}-${crew}`;
+export function legSheet(legId=''){const leg=state.data.tripLegs.find(l=>l.leg_id===legId)||{leg_id:id(),direction:state.tripDirection||'outbound',day_label:'',sequence:state.data.tripLegs.length+1,date:'',from_place:'',to_place:'',via:'',stop_type:'road_stop',map_url:'https://maps.google.com/',notes:'',decision_status:'needs_decision',status:'active',version:0};const joins=state.data.legCrews||[];const joined=crew=>{const r=joins.find(x=>x.leg_id===leg.leg_id&&x.crew_id===crew.crew_id);return r?String(r.joining)==='true'||r.joining===true:leg.direction==='outbound'||crew.crew_id===currentPerson().crew_id};return sheet(legId?'Edit route leg':'Add route leg',`${legId&&leg.map_url?`<a class="primary" style="display:block;text-align:center;text-decoration:none" href="${esc(leg.map_url)}" target="_blank" rel="noopener">Open this leg in Google Maps ↗</a>`:''}<form class="form" data-leg-form data-leg-id="${leg.leg_id}"><label>Direction<select name="direction"><option value="outbound" ${leg.direction==='outbound'?'selected':''}>Heading out</option><option value="return" ${leg.direction==='return'?'selected':''}>Coming home</option></select></label><label>Stop type<select name="stop_type">${stopTypes.map(([v,l])=>`<option value="${v}" ${leg.stop_type===v?'selected':''}>${l}</option>`).join('')}</select></label><label>Day / title<input required name="day_label" value="${esc(leg.day_label)}" placeholder="Sunday — pub lunch"></label><label>Date<input type="date" name="date" value="${leg.date||''}"></label><label>From<input required name="from_place" value="${esc(leg.from_place)}"></label><label>To / venue<input required name="to_place" value="${esc(leg.to_place)}" placeholder="Pub, petrol stop, stay or rendezvous"></label><label>Via / notable stops<input name="via" value="${esc(leg.via||'')}"></label><label>Google Maps link<input type="url" name="map_url" value="${esc(leg.map_url||'')}"></label><fieldset class="crew-picker"><legend>Crews joining this leg</legend>${state.data.crews.map(c=>`<label><input type="checkbox" name="crew_id" value="${c.crew_id}" ${joined(c)?'checked':''}> ${esc(c.display_name)}</label>`).join('')}</fieldset><label>Notes<textarea name="notes">${esc(leg.notes||'')}</textarea></label><button class="primary">Save route leg</button>${legId?`<button class="secondary" type="button" data-delete-leg="${leg.leg_id}">Delete this leg</button>`:''}</form>`)}
+export async function saveLeg(form){const fd=new FormData(form),existing=state.data.tripLegs.find(l=>l.leg_id===form.dataset.legId),record={...(existing||{}),leg_id:form.dataset.legId,direction:fd.get('direction'),stop_type:fd.get('stop_type'),day_label:fd.get('day_label'),date:fd.get('date'),from_place:fd.get('from_place'),to_place:fd.get('to_place'),via:fd.get('via'),map_url:fd.get('map_url'),notes:fd.get('notes'),sequence:existing?.sequence||state.data.tripLegs.length+1,status:'active',decision_status:existing?.decision_status||'needs_decision',created_by:existing?.created_by||currentPerson().person_id};patchRecord('trip_leg',record);await queue({entity:'trip_leg',action:existing?'update':'create',base_version:existing?.version,payload:record,actor_person_id:currentPerson().person_id});const selected=new Set(fd.getAll('crew_id'));for(const crew of state.data.crews){const old=(state.data.legCrews||[]).find(x=>x.leg_id===record.leg_id&&x.crew_id===crew.crew_id),participation={...(old||{}),leg_crew_id:old?.leg_crew_id||crewKey(record.leg_id,crew.crew_id),leg_id:record.leg_id,crew_id:crew.crew_id,joining:selected.has(crew.crew_id),notes:old?.notes||'',status:'active',updated_by:currentPerson().person_id};patchRecord('leg_crew',participation);await queue({entity:'leg_crew',action:old?'update':'create',base_version:old?.version,payload:participation,actor_person_id:currentPerson().person_id});}}

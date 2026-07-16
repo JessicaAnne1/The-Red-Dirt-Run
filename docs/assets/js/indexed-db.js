@@ -1,5 +1,5 @@
-const DB='red-dirt-run',VER=1;let db;
-export async function openDb(){if(db)return db;db=await new Promise((resolve,reject)=>{const r=indexedDB.open(DB,VER);r.onupgradeneeded=()=>{const d=r.result;['cache','outbox','meta'].forEach(s=>d.objectStoreNames.contains(s)||d.createObjectStore(s,{keyPath:'id'}));};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});return db}
+const DB='red-dirt-run',VER=2;let db;
+export async function openDb(){if(db)return db;db=await new Promise((resolve,reject)=>{const r=indexedDB.open(DB,VER);r.onupgradeneeded=()=>{const d=r.result;['cache','outbox','meta','issues'].forEach(s=>d.objectStoreNames.contains(s)||d.createObjectStore(s,{keyPath:'id'}));};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});return db}
 async function tx(store,mode,fn){const d=await openDb();return new Promise((resolve,reject)=>{const t=d.transaction(store,mode),s=t.objectStore(store);const r=fn(s);t.oncomplete=()=>resolve(r?.result);t.onerror=()=>reject(t.error);});}
 export const dbGet=(store,id)=>tx(store,'readonly',s=>s.get(id)); export const dbPut=(store,v)=>tx(store,'readwrite',s=>s.put(v)); export const dbDelete=(store,id)=>tx(store,'readwrite',s=>s.delete(id));
 export async function dbAll(store){const d=await openDb();return new Promise((resolve,reject)=>{const r=d.transaction(store).objectStore(store).getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
