@@ -1,0 +1,20 @@
+import {state,currentCrew,currentPerson,patchRecord} from '../store.js';
+import {queue} from '../sync.js';
+import {sheet,esc} from '../ui.js';
+
+const uid=(prefix)=>`${prefix}-${crypto.randomUUID().slice(0,8).toUpperCase()}`;
+export function itemSheet(id){
+  const item=state.data.items.find(x=>x.item_id===id),crew=currentCrew(),communal=item.scope==='communal';
+  const records=communal?state.data.commitments.filter(x=>x.item_id===id&&x.status!=='archived'):state.data.personalChecks.filter(x=>x.item_id===id);
+  const mine=records.find(x=>x.crew_id===crew.crew_id),claimed=records.reduce((n,x)=>n+Number(x.qty),0);
+  return sheet(item.name,`<p class="small">${communal?'COMMUNAL — split between crews':'EACH CREW — every crew keeps its own check'}</p><p>${communal?`${claimed} / ${item.qty_needed} ${esc(item.unit)} claimed`:(mine?`Your crew is ${mine.state}.`:'Your crew has not checked this yet.')}</p><form class="form" data-claim-form data-item-id="${item.item_id}">${communal?`<label>Quantity for ${esc(crew.display_name)}<input name="qty" type="number" min="0" max="${item.qty_needed}" value="${mine?.qty||1}"></label>`:''}<label>State<select name="state">${['claimed','packed','loaded'].map(x=>`<option ${mine?.state===x?'selected':''}>${x}</option>`).join('')}</select></label><button class="primary">${mine?'Update my crew':'I’ll bring it'}</button></form><form class="form" data-edit-item data-item-id="${item.item_id}"><label>Item name<input required name="name" value="${esc(item.name)}"></label><label>Scope<select name="scope"><option value="communal" ${communal?'selected':''}>Communal</option><option value="each_crew" ${!communal?'selected':''}>Each crew</option></select></label><label>Quantity needed<input name="qty_needed" type="number" min="1" value="${item.qty_needed}"></label><button class="secondary">Save item details</button></form><div class="actions"><button class="secondary" data-archive-item="${item.item_id}">${item.status==='archived'?'Restore':'Archive item'}</button></div>`);
+}
+export async function saveClaim(form){
+  const item=state.data.items.find(x=>x.item_id===form.dataset.itemId),crew=currentCrew(),entity=item.scope==='communal'?'commitment':'personal_check';
+  const records=entity==='commitment'?state.data.commitments:state.data.personalChecks,key=entity==='commitment'?'commitment_id':'personal_check_id';
+  const existing=records.find(x=>x.item_id===item.item_id&&x.crew_id===crew.crew_id&&(entity!=='commitment'||x.status!=='archived'));
+  let record=existing||{[key]:uid(entity==='commitment'?'COM':'PCHK'),item_id:item.item_id,crew_id:crew.crew_id,status:'active',notes:'',updated_by:currentPerson().person_id};
+  record={...record,qty:item.scope==='communal'?Number(new FormData(form).get('qty')):1,state:new FormData(form).get('state')};
+  patchRecord(entity,record);await queue({entity,action:existing?'update':'create',base_version:existing?.version,payload:record,actor_person_id:currentPerson().person_id});
+}
+export async function saveItemEdit(form){const item=state.data.items.find(x=>x.item_id===form.dataset.itemId),fd=new FormData(form),record={...item,name:fd.get('name'),scope:fd.get('scope'),qty_needed:Number(fd.get('qty_needed'))};patchRecord('item',record);await queue({entity:'item',action:'update',base_version:item.version,payload:record,actor_person_id:currentPerson().person_id});}

@@ -1,0 +1,6 @@
+import {dbGet,dbPut} from './indexed-db.js';
+export const state={data:null,personId:localStorage.getItem('rdr-person')||'',route:{screen:'home'},online:navigator.onLine,pending:0,filter:'needs'};
+const listeners=new Set();export const subscribe=fn=>(listeners.add(fn),()=>listeners.delete(fn));export const emit=()=>listeners.forEach(fn=>fn(state));
+export function setData(data){state.data=data;dbPut('cache',{id:'bootstrap',data,savedAt:Date.now()});emit()} export async function loadCache(){const c=await dbGet('cache','bootstrap');if(c)setData(c.data)}
+export function currentPerson(){return state.data?.people.find(p=>p.person_id===state.personId)} export function currentCrew(){const p=currentPerson();return state.data?.crews.find(c=>c.crew_id===p?.crew_id)}
+export function selectPerson(id){state.personId=id;localStorage.setItem('rdr-person',id);emit()} export function patchRecord(entity,record){const map={item:'items',commitment:'commitments',personal_check:'personalChecks',task:'tasks',trip_leg:'tripLegs',link:'links'};const k=map[entity];if(!k)return;state.data[k]??=[];const id=Object.keys(record).find(x=>x.endsWith('_id'));const i=state.data[k].findIndex(r=>r[id]===record[id]);i<0?state.data[k].push(record):state.data[k][i]=record;emit()}

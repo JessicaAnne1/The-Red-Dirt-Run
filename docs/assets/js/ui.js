@@ -1,0 +1,3 @@
+export const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function sheet(title,body){return `<div class="sheet-backdrop" data-close-sheet><section class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="handle"></div><div class="sheet-head"><h2>${esc(title)}</h2><button class="close" data-close-sheet aria-label="Close">×</button></div>${body}</section></div>`}
+export const status=(online,pending)=>!online?'<span class="status offline">Offline — saved on this phone</span>':pending?`<span class="status warn">Syncing ${pending} change${pending===1?'':'s'}</span>`:'<span class="status ok">Synced</span>';

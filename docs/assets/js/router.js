@@ -1,0 +1,2 @@
+import {state,emit} from './store.js';
+export function go(screen,params={}){state.route={screen,...params};history.pushState(state.route,'','#'+screen+(params.id?'/'+params.id:''));emit()}export function back(){history.length>1?history.back():go('home')}export function initRouter(){const hash=location.hash.slice(1).split('/');if(hash[0])state.route={screen:hash[0],id:hash[1]};history.replaceState(state.route,'',location.href);addEventListener('popstate',e=>{state.route=e.state||{screen:'home'};emit()})}

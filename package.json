@@ -1,0 +1,1 @@
+{"type":"module","scripts":{"test:seeds":"node tests/seed-check.mjs","test:sync":"node tests/mock-sync.mjs","check":"find docs -name '*.js' -print0 | xargs -0 -n1 node --check","test":"npm run test:seeds && npm run test:sync && npm run check"}}
