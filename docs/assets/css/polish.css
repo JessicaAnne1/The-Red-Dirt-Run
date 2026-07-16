@@ -6,3 +6,4 @@
 .filters{position:static;background:transparent;padding:8px 0}
 .todo-row{padding:7px;gap:6px}.task-check{width:42px;height:42px;border:0;border-radius:14px;background:#f9dfb1;color:var(--clay);font-size:1.45rem;line-height:1;flex:none}.todo-open{display:flex;align-items:center;gap:10px;flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:4px;color:inherit}.todo-open .grow{flex:1;min-width:0}.todo-open b,.todo-open .small{display:block}
 .heading-actions{display:flex;gap:7px;align-items:center}.heading-actions .secondary{min-height:40px;padding:8px 10px;font-size:.75rem}.archive-link{display:flex;align-items:center;justify-content:space-between;gap:12px}.archive-link p{margin:4px 0 0}
+.sync-notice{display:flex;align-items:center;justify-content:space-between;gap:10px}.sync-notice .secondary{flex:none;min-height:39px;padding:8px 11px;font-size:.75rem}
